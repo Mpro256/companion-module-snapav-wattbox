@@ -36,7 +36,7 @@ module.exports = {
 				name: 'Wattage',
 			}
 		)
-
+		/*
 		let model = this.MODELS.find((model) => model.id === this.config.model)
 
 		let outlets = 2
@@ -44,6 +44,10 @@ module.exports = {
 		if (model) {
 			outlets = model.outlets
 		}
+
+		yes.. this works. but if we have a model that is not in the list, we need to find the ports
+			*/ 
+		const outlets = this.getOutletCount()
 
 		for (let i = 0; i < outlets; i++) {
 			variables.push({
@@ -77,7 +81,7 @@ module.exports = {
 				amperage: this.DEVICE_DATA.powerInfo?.current,
 				wattage: this.DEVICE_DATA.powerInfo?.power,
 			}
-
+			/*
 			let model = this.MODELS.find((model) => model.id === this.config.model)
 
 			let outlets = 2
@@ -85,10 +89,14 @@ module.exports = {
 			if (model) {
 				outlets = model.outlets
 			}
+				again... works but could be hidden inside a helper function
+				*/
+			const outlets = this.getOutletCount()
 
 			for (let i = 0; i < outlets; i++) {
-				variableObj[`outlet${i + 1}Name`] = this.DEVICE_DATA.outletInfo[i].name
-				variableObj[`outlet${i + 1}State`] = this.DEVICE_DATA.outletInfo[i].state == '1' ? 'On' : 'Off'
+				const info = this.DEVICE_DATA.outletInfo?.[i] || {}
+				variableObj[`outlet${i + 1}Name`] = info.name ?? ''
+				variableObj[`outlet${i + 1}State`] = info.state == 1 ? 'On' : 'Off'
 			}
 
 			if (this.config.protocol === 'telnet') {

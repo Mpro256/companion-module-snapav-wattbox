@@ -11,6 +11,7 @@ module.exports = {
 		const ColorRed = combineRgb(200, 0, 0)
 		const ColorGreen = combineRgb(0, 200, 0)
 
+		/*
 		let outlets = 12
 
 		if (self.config.model === 'other') {
@@ -22,7 +23,10 @@ module.exports = {
 				outlets = model.outlets
 			}
 		}
-
+		easier way to do this.. just use the helper	
+		*/
+		const outlets = self.getOutletCount()
+	
 		for (let i = 0; i < outlets; i++) {
 			presets[`outlet${i + 1}On`] = {
 				type: 'button',

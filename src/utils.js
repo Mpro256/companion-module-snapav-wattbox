@@ -28,11 +28,11 @@ module.exports = {
 
 	controlOutlet: function (outlet, command) {
 		let self = this
-	
+
 		self.log('debug', 'Control Outlet: ' + outlet + ' Command: ' + command)
-	
+
 		const isModel800vps = self.config.model === '800vps'
-	
+
 		// If 'All' selected and model is 800vps, loop through each real outlet
 		if (outlet === '0' && isModel800vps) {
 			for (let choice of self.outletChoices) {
@@ -42,7 +42,7 @@ module.exports = {
 			}
 			return
 		}
-	
+
 		if (self.config.protocol === 'telnet') {
 			if (command === '1') {
 				command = 'ON'
@@ -52,7 +52,7 @@ module.exports = {
 			self.addTelnetCommand(`!OutletSet=${outlet},${command}`)
 		} else {
 			let path = ''
-	
+
 			if (isModel800vps) {
 				if (command === '1') {
 					path = `/outlet/on?o=${outlet}`
@@ -65,11 +65,11 @@ module.exports = {
 			} else {
 				path = `/control.cgi?outlet=${outlet}&command=${command}`
 			}
-	
+
 			if (self.config.verbose) {
 				self.log('debug', 'Control Outlet Path: ' + path)
 			}
-	
+
 			if (path !== '') {
 				self.sendHTTPCommand(path)
 			}
@@ -103,6 +103,15 @@ module.exports = {
 			self.outletChoicesFeedbacks.push({ id: i, label: `Outlet ${i + 1}` })
 			self.DEVICE_DATA.outletInfo.push({ name: '', state: 0 })
 		}
+	},
+
+	getModel: function () { //simple module to get the model
+		return this.MODELS.find((m) => m.id === this.config.model)
+	},
+
+	getOutletCount: function () { //how many outlets do we have?
+		if (this.config.model === 'other') return parseInt(this.config.outlets) || 2
+		return this.getModel()?.outlets ?? 2
 	},
 
 	setupInterval() {
