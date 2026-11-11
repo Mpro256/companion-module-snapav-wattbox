@@ -4,7 +4,9 @@
 	"main": "src/index.js",
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
-		"format": "prettier -w ."
+		"format": "prettier -w .",
+		"package": "companion-module-build",
+		"check": "companion-module-check"
 	},
 	"license": "MIT",
 	"devDependencies": {
