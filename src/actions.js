@@ -40,7 +40,7 @@ module.exports = {
 					},
 				],
 				callback: (action) => {
-					self.controlOutlet(action.options.outlet, 3)
+					self.controlOutlet(action.options.outlet, '3')
 				},
 			},
 			autoRebootOn: {

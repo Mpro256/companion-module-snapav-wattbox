@@ -120,9 +120,24 @@ module.exports = {
 
 					// Check for 404 Not Found
 					if (headersRaw.includes('404 Not Found')) {
-						self.log('debug', `404 Not Found: ${path}`)
+						self.log('error', `404 Not Found: ${path}`)
+						self.updateStatus(InstanceStatus.BadConfig, `${path} not found - is the right model selected?`)
 						self.stopInterval()
 						return
+					}
+
+
+					if (/^HTTP\/1\.[01] 401/.test(headersRaw)) {
+						if (self.USING_DIGEST_AUTH) {
+							self.USING_DIGEST_AUTH = false
+							self.digest = null
+							self.log('debug', 'Login Expired! we need to login again!')
+							return
+						}
+						if (!headers['www-authenticate']?.startsWith('Digest')) {
+							self.updateStatus(InstanceStatus.BadConfig, 'Login Failed! Wrong Username or Password!')
+							return
+						}
 					}
 
 					if (headers['www-authenticate']?.startsWith('Digest') && !self.USING_DIGEST_AUTH) {
@@ -159,11 +174,8 @@ module.exports = {
 					const firstIndex = body.indexOf('<')
 					const cleanBody = body.slice(firstIndex)
 
-					if (self.config.model === '800vps') {
-						const outletData = parseWattboxHtml(cleanBody)
-						self.DEVICE_DATA = outletData
-						self.checkFeedbacks()
-						self.checkVariables()
+					if (self.config.model?.startsWith('800')) {
+						self.process800Html(cleanBody)
 					} else {
 						self.processHttpData(cleanBody)
 					}
@@ -171,7 +183,8 @@ module.exports = {
 			})
 
 			client.on('error', (error) => {
-				console.error('Socket Error:', error)
+				self.log('error', `Cannot reach WattBox: ${error.message}`)
+				self.updateStatus(InstanceStatus.ConnectionFailure, error.message)
 			})
 
 			self.log('debug', `http://${self.config.ip}${path}`)
@@ -219,16 +232,45 @@ module.exports = {
 
 		client.on('end', () => {
 			const headersEndIndex = rawData.indexOf('\r\n\r\n')
+
+			if (/^HTTP\/1\.[01] 401/.test(rawData)) {
+				self.USING_DIGEST_AUTH = false
+				self.digest = null
+				self.updateStatus(InstanceStatus.BadConfig, 'Login Failed! Wrong Username or Password!')
+				return
+			}
+
 			const body = rawData.slice(headersEndIndex + 4)
 			const firstIndex = body.indexOf('<')
 			const cleanBody = body.slice(firstIndex)
-			console.log('processing digest response')
-			self.processHttpData(cleanBody)
+
+			if (self.config.model?.startsWith('800')) {
+				self.process800Html(cleanBody)
+			} else {
+				self.processHttpData(cleanBody)
+			}
 		})
 
 		client.on('error', (error) => {
-			console.error('Retry Socket Error:', error)
+			self.log('error', `Cannot reach WattBox: ${error.message}`)
+			self.updateStatus(InstanceStatus.ConnectionFailure, error.message)
 		})
+	},
+
+
+	process800Html: function (html) {
+		let self = this
+		const outletData = parseWattboxHtml(html)
+
+		if (outletData.outletInfo.length === 0) {
+			self.updateStatus(InstanceStatus.UnknownWarning, 'Device responded, but no outlets were found in the page')
+			return
+		}
+
+		self.DEVICE_DATA = outletData
+		self.updateStatus(InstanceStatus.Ok)
+		self.checkFeedbacks()
+		self.checkVariables()
 	},
 
 	processHttpData: function (data) {
@@ -241,6 +283,10 @@ module.exports = {
 		try {
 			parseXml(data, (err, result) => {
 				console.log(JSON.stringify(result, null, 4))
+				if (err) {
+					self.updateStatus(InstanceStatus.UnknownWarning, 'Device responded, but not with the right WattBox XML. Is the right model selected?')
+					return
+				}
 
 				if (result && result?.request) {
 					const data = result.request
@@ -277,13 +323,13 @@ module.exports = {
 					self.DEVICE_DATA = info
 					self.checkFeedbacks()
 					self.checkVariables()
+					self.updateStatus(InstanceStatus.Ok)
 				}
 
-				self.updateStatus(InstanceStatus.Ok)
 			})
 		} catch (error) {
 			self.log('error', `Error parsing XML: ${error}`)
-			self.updateStatus(InstanceStatus.Error, `Error parsing XML: ${error}`)
+			self.updateStatus(InstanceStatus.UnknownError, `Error parsing XML: ${error}`)
 		}
 	},
 }

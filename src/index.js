@@ -91,14 +91,19 @@ class SnapAVWattboxInstance extends InstanceBase {
 
 		if (this.config.protocol === 'http') {
 			this.authKey = this.getAuthKey(this.config.username, this.config.password)
+			/*
 			if (this.config.verbose) {
 				this.log('debug', 'Auth Key: ' + this.authKey)
 			}
-			this.updateStatus(InstanceStatus.Ok)
+				this is readable. we don't want to log the auth key straight to the debug log.
+				*/
+			this.updateStatus(InstanceStatus.Connecting)
 
 			if (this.config.polling) {
 				this.setupInterval()
 			}
+
+			this.getInformation()
 		} else if (this.config.protocol === 'telnet') {
 			this.initTelnet()
 		}

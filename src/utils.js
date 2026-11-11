@@ -14,7 +14,7 @@ module.exports = {
 		let self = this
 
 		if (self.config.protocol === 'http') {
-			if (self.config.model === '800vps') {
+			if (self.config.model?.startsWith('800')) { 
 				self.sendHTTPCommand('/main')
 			} else {
 				self.sendHTTPCommand('/wattbox_info.xml')
@@ -31,7 +31,7 @@ module.exports = {
 
 		self.log('debug', 'Control Outlet: ' + outlet + ' Command: ' + command)
 
-		const isModel800vps = self.config.model === '800vps'
+			const isModel800vps = self.config.model?.startsWith('800')
 
 		// If 'All' selected and model is 800vps, loop through each real outlet
 		if (outlet === '0' && isModel800vps) {
